@@ -8,12 +8,12 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define N 100000000          /* factor every number from 2 to N (10^8). Works up to 10^9 without other changes */
+#define N 100000000          // factor every number from 2 to N (10^8). Works up to 10^9 without other changes
 
-int primes[4000];            /* small primes up to sqrt(N) (3401 primes are enough for N up to 10^9) */
+int primes[4000];            // small primes up to sqrt(N) (3401 primes are enough for N up to 10^9)
 int num_primes = 0;
 
-/* Plain sieve: find all primes up to sqrt(N) */
+// Plain sieve: find all primes up to sqrt(N)
 void find_small_primes() {
     int r = (int)sqrt((double)N);
     static char composite[32000];
@@ -26,7 +26,7 @@ void find_small_primes() {
     }
 }
 
-/* Break n into prime factors and return how many there are (12 = 2*2*3 gives 3) */
+// Break n into prime factors and return how many there are (12 = 2*2*3 gives 3)
 int count_factors(int n) {
     int count = 0;
     for (int k = 0; k < num_primes && primes[k] * primes[k] <= n; k++) {
@@ -35,7 +35,7 @@ int count_factors(int n) {
             count++;
         }
     }
-    if (n > 1) count++;          /* what is left is one last prime */
+    if (n > 1) count++;          // what is left is one last prime
     return count;
 }
 
@@ -52,12 +52,12 @@ int main(int argc, char **argv) {
     double start = MPI_Wtime();
 
     find_small_primes();
-    int my_count = (N - 1 - rank + size - 1) / size;    /* how many numbers this rank owns */
+    int my_count = (N - 1 - rank + size - 1) / size;    // how many numbers this rank owns
     long long local = 0, total = 0;
 
     #pragma omp parallel for schedule(dynamic, 10000) reduction(+:local)
     for (int k = 0; k < my_count; k++)
-        local += count_factors(2 + rank + k * size);    /* k-th number of this rank */
+        local += count_factors(2 + rank + k * size);    // k-th number of this rank
 
     MPI_Reduce(&local, &total, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 

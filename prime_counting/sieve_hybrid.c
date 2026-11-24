@@ -8,13 +8,13 @@
 #include <mpi.h>
 #include <omp.h>
 
-#define N 10000000000LL      /* 10^10. Needs long long because it is bigger than int */
-#define BLOCK 100000         /* numbers per block (100 KB, small enough for cache) */
+#define N 10000000000LL      // 10^10. Needs long long because it is bigger than int
+#define BLOCK 100000         // numbers per block (100 KB, small enough for cache)
 
-int small_primes[10000];     /* primes up to sqrt(N) = 100000 (there are only 9592) */
+int small_primes[10000];     // primes up to sqrt(N) = 100000 (there are only 9592)
 int num_small = 0;
 
-/* Plain sieve: find all primes up to sqrt(N) */
+// Plain sieve: find all primes up to sqrt(N)
 void find_small_primes() {
     int r = (int)sqrt((double)N);
     static char composite[100002];
@@ -27,22 +27,22 @@ void find_small_primes() {
     }
 }
 
-/* Count primes in block number b. Block b covers [2 + b*BLOCK, 2 + (b+1)*BLOCK - 1]. */
+// Count primes in block number b. Block b covers [2 + b*BLOCK, 2 + (b+1)*BLOCK - 1].
 int sieve_block(int b, char *buf) {
     long long low  = 2 + (long long)b * BLOCK;
     long long high = low + BLOCK - 1;
     if (high > N) high = N;
     int len = (int)(high - low + 1);
 
-    for (int i = 0; i < len; i++) buf[i] = 1;          /* 1 = prime so far */
+    for (int i = 0; i < len; i++) buf[i] = 1;          // 1 = prime so far
 
     for (int k = 0; k < num_small; k++) {
         long long p = small_primes[k];
         if (p * p > high) break;
-        long long start = (low + p - 1) / p * p;       /* first multiple of p in the block */
+        long long start = (low + p - 1) / p * p;       // first multiple of p in the block
         if (start < p * p) start = p * p;
         for (long long j = start; j <= high; j += p)
-            buf[j - low] = 0;                          /* cross out multiple */
+            buf[j - low] = 0;                          // cross out multiple
     }
 
     int count = 0;
@@ -64,15 +64,15 @@ int main(int argc, char **argv) {
 
     find_small_primes();
     int num_blocks = (N - 1 + BLOCK - 1) / BLOCK;
-    int my_blocks = (num_blocks - rank + size - 1) / size;   /* how many blocks this rank owns */
+    int my_blocks = (num_blocks - rank + size - 1) / size;   // how many blocks this rank owns
     int local = 0, total = 0;
 
     #pragma omp parallel reduction(+:local)
     {
-        char buf[BLOCK];                       /* private buffer per thread */
+        char buf[BLOCK];                       // private buffer per thread
         #pragma omp for schedule(dynamic)
         for (int k = 0; k < my_blocks; k++)
-            local += sieve_block(rank + k * size, buf);   /* k-th block of this rank */
+            local += sieve_block(rank + k * size, buf);   // k-th block of this rank
     }
 
     MPI_Reduce(&local, &total, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
